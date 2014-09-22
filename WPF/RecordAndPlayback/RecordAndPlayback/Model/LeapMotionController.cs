@@ -1,44 +1,112 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using Leap;
 
 namespace RecordAndPlayback.Model
 {
-    public class LeapMotionController : LeapMotionControllerBase
+    public class LeapMotionController : INotifyPropertyChanged, IDisposable
     {
-        protected Controller leap = new Controller();
-
-        public LeapMotionController()
+        public enum DataSource
         {
+            Controller, // コントローラーから取得(保存なし)
+            Record,     // コントローラーから取得(保存あり)
+            Playback,   // 保存データから取得
+        }
+
+        const string FileName = @"LeapPlayback.bin";
+
+        Controller leap = new Controller();
+        LeapMotionRecorder recorder = null;
+        LeapMotionPlayback player = null;
+
+        DataSource dataSource = DataSource.Controller;
+
+        public LeapMotionController( DataSource source )
+        {
+            dataSource = source;
+            if ( dataSource == DataSource.Record ) {
+                recorder = new LeapMotionRecorder( FileName );
+            }
+            else if ( dataSource == DataSource.Playback ) {
+                player = new LeapMotionPlayback( FileName );
+            }
+
             leap.SetPolicyFlags( leap.PolicyFlags | Controller.PolicyFlag.POLICY_IMAGES );
 
             CompositionTarget.Rendering += CompositionTarget_Rendering;
         }
 
+        /// <summary>
+        /// 一定の周期(WPFの描画周期)で呼び出される
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         void CompositionTarget_Rendering( object sender, EventArgs e )
         {
-            Update();
-        }
+            var frame = GetFrame();
 
-        protected virtual void Update()
-        {
-            var frame = leap.Frame();
+            _Fingers.Clear();
 
-            var images = frame.Images;
-            if ( images.Count == 0 ) {
-                return;
+            var ibox = frame.InteractionBox;
+            foreach ( var finger in frame.Fingers ) {
+                _Fingers.Add( ibox.NormalizePoint( finger.StabilizedTipPosition ) );
             }
 
-            ImageLeft = BitmapSource.Create( images[0].Width, images[0].Height, 96, 96, PixelFormats.Gray8, null, images[0].Data, images[0].Width );
-            NotifyPropertyChanged( "ImageLeft" );
-
-            ImageRight = BitmapSource.Create( images[1].Width, images[1].Height, 96, 96, PixelFormats.Gray8, null, images[1].Data, images[1].Width );
-            NotifyPropertyChanged( "ImageRight" );
+            NotifyPropertyChanged( "Fingers" );
         }
+
+        Frame GetFrame()
+        {
+            if (dataSource == DataSource.Controller) {
+                return leap.Frame();
+            }
+            else if ( dataSource == DataSource.Record ) {
+                var frame = leap.Frame();
+                recorder.Record( frame );
+                return frame;
+            }
+            else {
+                return player.Frame();
+            }
+        }
+
+        List<Vector> _Fingers = new List<Vector>();
+
+        public Vector[] Fingers
+        {
+            get
+            {
+                return _Fingers.ToArray();
+            }
+        }
+
+        #region INotifyPropertyChanged
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void NotifyPropertyChanged( [CallerMemberName] string propertyName = "" )
+        {
+            if ( PropertyChanged != null ) {
+                PropertyChanged( this, new PropertyChangedEventArgs( propertyName ) );
+            }
+        }
+        #endregion
+
+        #region INotifyPropertyChanged
+        public void Dispose()
+        {
+            if ( player != null ) {
+                player.Dispose();
+                player = null;
+            }
+
+            if ( recorder != null ) {
+                recorder.Dispose();
+                recorder = null;
+            }
+        }
+        #endregion
     }
 }

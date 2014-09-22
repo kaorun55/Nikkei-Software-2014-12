@@ -1,39 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Leap;
 
 namespace RecordAndPlayback.Model
 {
-    public class LeapMotionRecorder : LeapMotionController
+    public class LeapMotionRecorder : IDisposable
     {
         FileStream stream;
 
-        public LeapMotionRecorder()
+        public LeapMotionRecorder( string fileName )
         {
-            stream = new FileStream( @"LeapPlayback.bin", FileMode.Create, FileAccess.Write );
+            stream = new FileStream( fileName, FileMode.Create, FileAccess.Write );
         }
 
-        protected override void Update()
+        public void Record( Frame frame )
         {
-            base.Update();
-
-            var frame = leap.Frame();
             var binary = frame.Serialize;
             var length = System.BitConverter.GetBytes(binary.Length);
 
+            // データ長&Frameデータ
             stream.Write( length, 0, length.Length );
             stream.Write( binary, 0, binary.Length );
             stream.Flush();
         }
 
-        protected override void DisposeManagedObjects()
+        public void Dispose()
         {
-            base.DisposeManagedObjects();
-
             if ( stream !=null ) {
                 stream.Dispose();
                 stream = null;

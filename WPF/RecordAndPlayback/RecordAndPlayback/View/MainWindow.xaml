@@ -3,23 +3,19 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:RecordAndPlayback.ViewModel"
         Title="MainWindow"
-        SizeToContent="WidthAndHeight">
+        Width="640" Height="480">
+    
     <Window.DataContext>
         <vm:MainWindowViewModel/>
     </Window.DataContext>
-    <StackPanel Orientation="Vertical">
-        <Grid Width="640" Height="240">
-            <Image Source="{Binding ImageRight}"/>
-            <ItemsControl ItemsSource="{Binding CanvasRight}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <Canvas/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-            </ItemsControl>
-        </Grid>
-        
-        <Border Height="10" />
-        <Image Source="{Binding ImageLeft}" Width="640" Height="240"/>
-    </StackPanel>
+    
+    <Grid>
+        <ItemsControl ItemsSource="{Binding CanvasFinger}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Canvas/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+        </ItemsControl>
+    </Grid>
 </Window>

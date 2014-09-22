@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using RecordAndPlayback.Model;
 
@@ -17,7 +11,10 @@ namespace RecordAndPlayback.ViewModel
 {
     public class MainWindowViewModel : INotifyPropertyChanged
     {
-        LeapMotionControllerBase leap = new LeapMotionPlayback();
+        LeapMotionController leap = new LeapMotionController(LeapMotionController.DataSource.Record);
+
+        const int Width = 640;
+        const int Height = 480;
 
         public MainWindowViewModel()
         {
@@ -26,15 +23,9 @@ namespace RecordAndPlayback.ViewModel
 
         void leap_PropertyChanged( object sender, PropertyChangedEventArgs e )
         {
-            if ( e.PropertyName == "ImageRight" ) {
-                NotifyPropertyChanged( e.PropertyName );
-            }
-            else if ( e.PropertyName == "ImageLeft" ) {
-                NotifyPropertyChanged( e.PropertyName );
-            }
-            else if ( e.PropertyName == "FingerRight" ) {
-                foreach ( var vec in leap.FingerRight ) {
-                    CanvasRight.Clear();
+            if ( e.PropertyName == "Fingers" ) {
+                CanvasFinger.Clear();
+                foreach ( var vec in leap.Fingers ) {
                     var ellipse = new Ellipse()
                     {
                         Width = 10,
@@ -42,38 +33,22 @@ namespace RecordAndPlayback.ViewModel
                         Fill = Brushes.Red,
                     };
 
-                    Canvas.SetLeft( ellipse, vec.x );
-                    Canvas.SetTop( ellipse, vec.y );
+                    Canvas.SetLeft( ellipse, vec.x * Width );
+                    Canvas.SetTop( ellipse, Height - (vec.y * Height) );
 
-                    CanvasRight.Add( ellipse );
+                    CanvasFinger.Add( ellipse );
                 }
 
-                NotifyPropertyChanged( "CanvasRight" );
+                NotifyPropertyChanged( "CanvasFinger" );
             }
         }
 
-        private ObservableCollection<FrameworkElement> _CanvasRight = new ObservableCollection<FrameworkElement>();
-        public ObservableCollection<FrameworkElement> CanvasRight
+        private ObservableCollection<FrameworkElement> _CanvasFinger = new ObservableCollection<FrameworkElement>();
+        public ObservableCollection<FrameworkElement> CanvasFinger
         {
             get
             {
-                return _CanvasRight;
-            }
-        }
-
-        public BitmapSource ImageRight
-        {
-            get
-            {
-                return leap.ImageRight;
-            }
-        }
-
-        public BitmapSource ImageLeft
-        {
-            get
-            {
-                return leap.ImageLeft;
+                return _CanvasFinger;
             }
         }
 
